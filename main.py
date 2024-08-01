@@ -24,7 +24,7 @@ Question: {question}
 Assistant : """
 
 
-bedrock = boto3.client(service='bedrock-runtime', region_name = 'us-east-1')
+bedrock = boto3.client(service_name='bedrock-runtime', region_name = 'us-east-1')
 bedrock_embedding = BedrockEmbeddings(model_id='amazon.titan-embed-text-v1', client=bedrock)
 
 
@@ -55,8 +55,29 @@ def get_llm_response(llm, vectorstore_faiss, query):
                                      return_source_documents=True,
                                      chain_type_kwargs={'prompt':prompt})
     response = qa({'query':query})
-    return response['results']
+    return response['result']
 
 
 def main():
-    
+    st.set_page_config('RAG')
+    st.header('RAG using Bedrock')
+    user_question = st.text_input('Ask any question from the PDF?')
+
+    with st.sidebar:
+        st.title('Update and create vector store.')
+
+        if st.button('Store Vector'):
+            with st.spinner('Porcessing....'):
+                docs = getdocument()
+                get_vector_store(docs)
+                st.success('Completed')
+
+        if st.button('Send'):
+            with st.spinner('Porcessing....'):
+                faiss_index = FAISS.load_local('faiss_local', bedrock_embedding, allow_dangerous_deserialization=True)
+                llm = get_llm()
+                st.write(get_llm_response(llm,faiss_index,user_question))
+
+
+if __name__ == '__main__':
+    main()
